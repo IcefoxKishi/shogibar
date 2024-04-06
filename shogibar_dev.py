@@ -6,6 +6,7 @@ import threading
 import subprocess
 import tkinter as tk
 from PIL import ImageTk, Image
+from tkinter import filedialog
 
 # エンジン名・フォント・文字色・背景色
 engine = "Suisho 5"  # 水匠5
@@ -52,6 +53,24 @@ def cook(c):
         else:
             return cureval
 
+def sopen_file_dialog():
+    file_path = filedialog.askopenfilename(title="Select a File", filetypes=[("Images", "*.png"), ("All files", "*.*")])
+    if file_path:
+        global siobj
+        siobj = ImageTk.PhotoImage(Image.open(file_path))
+        print(file_path)
+        simglabel["image"] = siobj
+        snamel.pack_forget()
+        srankl.pack_forget()
+def gopen_file_dialog():
+    file_path = filedialog.askopenfilename(title="Select a File", filetypes=[("Images", "*.png"), ("All files", "*.*")])
+    if file_path:
+        global giobj
+        giobj = ImageTk.PhotoImage(Image.open(file_path))
+        print(file_path)
+        gimglabel["image"] = giobj
+        gnamel.pack_forget()
+        grankl.pack_forget()
 
 def update():
     snamel['text'] = sente_name.get()
@@ -251,26 +270,36 @@ def shogibar(line):
                 bestpc1["text"] = str(round(evals[0])) + "%"
             else:
                 bestpc1["text"] = str(100 - round(evals[0])) + "%"
+            if math.floor(evals[0]) <= 10:
+                bestpc1["fg"] = dangercolor
         if len(evals) >= 2 and evals[1] is not None and pvs[1]:
             if current_board_turn == -1:
                 bestpc2["text"] = "-" + str(math.floor(evals[1]) - math.floor(evals[0])) + "%"
             else:
                 bestpc2["text"] = str(math.floor(evals[1]) - math.floor(evals[0])) + "%"
+            if evals[1] <= 10:
+                bestpc2["fg"] = dangercolor
         if len(evals) >= 3 and evals[2] is not None and pvs[2]:
             if current_board_turn == -1:
                 bestpc3["text"] = "-" + str(math.floor(evals[2]) - math.floor(evals[0])) + "%"
             else:
                 bestpc3["text"] = str(math.floor(evals[2]) - math.floor(evals[0])) + "%"
+            if evals[2] <= 10:
+                bestpc3["fg"] = dangercolor
         if len(evals) >= 4 and evals[3] is not None and pvs[3]:
             if current_board_turn == -1:
                 bestpc4["text"] = "-" + str(math.floor(evals[3]) - math.floor(evals[0])) + "%"
             else:
                 bestpc4["text"] = str(math.floor(evals[3]) - math.floor(evals[0])) + "%"
+            if evals[3] <= 10:
+                bestpc4["fg"] = dangercolor
         if len(evals) >= 5 and evals[4] is not None and pvs[4]:
             if current_board_turn == -1:
                 bestpc5["text"] = "-" + str(math.floor(evals[4]) - math.floor(evals[0])) + "%"
             else:
                 bestpc5["text"] = str(math.floor(evals[4]) - math.floor(evals[0])) + "%"
+            if evals[4] <= 10:
+                bestpc5["fg"] = dangercolor
         if len(pvs) > 0 and move_count == 1 and pvs[0] != "":
             saizen["text"] = "Move " + str(move_count) + " | Best move: " + KI2.move_to_ki2(
                 board.move_from_usi(pvs[0]), board)
@@ -333,7 +362,7 @@ rwinratelabel.place(x=1495, y=33, anchor=tk.E)
 
 # mate label
 tsumelabel = tk.Label(bar, text="", font=(barfont, 14), bg=bgcolor, fg=fgcolor)
-tsumelabel.place(x=605, y=50, anchor=tk.CENTER)
+tsumelabel.place(x=1005, y=50, anchor=tk.CENTER)
 
 # 手番ラベル
 ltebanlabel = tk.Label(bar, text="", font=(barfont, 14), bg="#ffffff", fg="#ffffff")
@@ -360,20 +389,28 @@ check = tk.Checkbutton(bar, variable=bln, text="Reverse", font=(barfont, 15), bg
 check.place(x=50, y=150)
 # 左右反転チェック
 
-sframe = tk.Frame(bar, width=65, height=75)
+sframe = tk.Frame(bar)
 sframe.configure(bg='white', borderwidth=0, highlightthickness=0)
-gframe = tk.Frame(bar, width=65, height=75)
+siframe = tk.Frame(bar)
+giframe = tk.Frame(bar)
+gframe = tk.Frame(bar)
 gframe.configure(bg='white', borderwidth=0, highlightthickness=0)
 sframe.pack()
 gframe.pack()
 sframe.place(x=0, y=0)
+siframe.place(x=80,y=0)
 gframe.place(x=1720, y=0)
+giframe.place(x=1540,y=0)
 simg = ImageTk.PhotoImage(sente_image.resize((80, 120)))
 gimg = ImageTk.PhotoImage(gote_image.resize((80, 120)))
 slabel = tk.Label(sframe, image=simg)
 slabel.pack()
 glabel = tk.Label(gframe, image=gimg)
 glabel.pack()
+simglabel = tk.Label(siframe)
+simglabel.pack()
+gimglabel = tk.Label(giframe)
+gimglabel.pack()
 sente_name = tk.Entry(root)
 gote_name = tk.Entry(root)
 sente_rank = tk.Entry(root)
@@ -391,6 +428,8 @@ tk.Label(root, text='Gote name (max 5 char)').grid(row=1)
 tk.Label(root, text='Sente rank (max 2 char)').grid(row=2)
 tk.Label(root, text='Gote rank (max 2 char)').grid(row=3)
 tk.Button(root, text='Update', command=update).grid(row=4)
+tk.Button(root, text='Set Sente name image', command=sopen_file_dialog).grid(row=5)
+tk.Button(root, text='Set Gote name image', command=gopen_file_dialog).grid(row=6)
 sente_name.grid(row=0, column=1)
 gote_name.grid(row=1, column=1)
 sente_rank.grid(row=2, column=1)
