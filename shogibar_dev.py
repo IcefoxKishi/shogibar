@@ -1,27 +1,26 @@
 import math
 import sys
+import traceback
+
 from cshogi import *
 from cshogi import KI2
 import threading
 import subprocess
 import tkinter as tk
-from PIL import ImageTk, Image
-from tkinter import filedialog
+import numpy as np
 
 # エンジン名・フォント・文字色・背景色
-engine = "Suisho 5"  # 水匠5
-barfont = "Noto Sans JP"  # BIZ UDGothic
-percentfont = "Noto Sans JP"  # BIZ UDGothic
-bgcolor = "white"  # white
+engine = "SUISHO 5"  # 水匠5
+barfont = "Be Vietnam Pro Bold"  # BIZ UDGothic
+percentfont = "Be Vietnam Pro"  # BIZ UDGothic
+bgcolor = "#ffffff"  # white
 fgcolor = "black"
-dangercolor = "#990000"  # black
+dangercolor = "#f02626"  # black
 turnfgcolor = "#00007f"  # #00007f
 leftgraphbg = "#000000"  # #000000
 rightgraphbg = "#ffffff"  # #ffffff
 warutecolor = "#ff00ff"
 strlastmove = ""
-sente_image = Image.open("sente.png")
-gote_image = Image.open("gote.png")
 evals = [0, 0, 0, 0, 0]
 piece_points = [0, 1, 1, 1, 1, 5, 5, 1, 0, 1, 1, 1, 1, 5, 5, 0, 0, 1, 1, 1, 1, 5, 5, 1, 0, 1, 1, 1, 1, 5, 5]
 gote_points = 0
@@ -35,48 +34,48 @@ values = []
 
 def cook(c):
     eval = int(c[1])
+    if c[2] == 1:
+        skibidi = board.copy()
+        tolabel = ""
+        for move in c[3]:
+            tolabel += KI2.move_to_ki2(skibidi.move_from_usi(move), skibidi)
+            skibidi.push_usi(move)
+        suggestionlabel["text"] = tolabel
     if c[0] == "mate":
+        saizen.config(font=("Be Vietnam Pro", 14))
         if eval * current_board_turn < 0:
+            moves = eval * current_board_turn
+            test = board.copy()
+            while moves % 2 != 1:
+                for move in c[3]:
+                    test.push_usi(move)
+                    moves -= 1
+            if test.mate_move(moves) == 0:
+                tsumelabel["text"] = "Gote victory - Hisshi"
             if c[2] == 1:
-                tsumelabel["text"] = "Gote victory - Checkmate in " + str(abs(eval)) + " moves"
+                tsumelabel["text"] = "Gote victory - Checkmate in" + str(abs(eval))
             return 1
         else:
+            moves = eval * current_board_turn
+            test = board.copy()
+            while moves % 2 != 1:
+                for move in c[3]:
+                    test.push_usi(move)
+                    moves -= 1
             if c[2] == 1:
-                tsumelabel["text"] = "Sente victory - Checkmate in " + str(abs(eval)) + " moves"
+                if test.mate_move(moves) == 0:
+                    tsumelabel["text"] = "Sente victory - Hisshi"
+                else:
+                    tsumelabel["text"] = "Sente victory - Checkmate in" + str(abs(eval))
             return 99
     else:
-        cureval = 100 / (1 + math.exp(eval * current_board_turn / -600))
+        cureval = 100 / (1 + math.exp(eval * current_board_turn/-1200))
         if cureval < 1:
             return 1
         if cureval > 99:
             return 99
         else:
             return cureval
-
-def sopen_file_dialog():
-    file_path = filedialog.askopenfilename(title="Select a File", filetypes=[("Images", "*.png"), ("All files", "*.*")])
-    if file_path:
-        global siobj
-        siobj = ImageTk.PhotoImage(Image.open(file_path))
-        print(file_path)
-        simglabel["image"] = siobj
-        snamel.pack_forget()
-        srankl.pack_forget()
-def gopen_file_dialog():
-    file_path = filedialog.askopenfilename(title="Select a File", filetypes=[("Images", "*.png"), ("All files", "*.*")])
-    if file_path:
-        global giobj
-        giobj = ImageTk.PhotoImage(Image.open(file_path))
-        print(file_path)
-        gimglabel["image"] = giobj
-        gnamel.pack_forget()
-        grankl.pack_forget()
-
-def update():
-    snamel['text'] = sente_name.get()
-    srankl['text'] = sente_rank.get()
-    grankl['text'] = gote_rank.get()
-    gnamel['text'] = gote_name.get()
 
 
 bestpercent = ""
@@ -99,7 +98,7 @@ def king_check():
         return False
 
 
-def board_turn(c):
+def get_turn(c):
     if c == 0:
         return 1
     if c == 1:
@@ -111,6 +110,7 @@ def command():
         cmdline = input()
         # 局面設定
         if cmdline[:8] == "position":
+            saizen.config(font=("Be Vietnam Pro", 20))
             global board, last_move
             board.set_position(cmdline[9:])
             global sente_camp
@@ -137,11 +137,11 @@ def command():
                 strlastmove = KI2.move_to_ki2(last_move, scrap)
             prev = cmdline.split()
             prev.pop(0)
-            best1["text"] = "1. "
-            best2["text"] = "2. "
-            best3["text"] = "3. "
-            best4["text"] = "4. "
-            best5["text"] = "5. "
+            best1["text"] = "１. "
+            best2["text"] = "２. "
+            best3["text"] = "３. "
+            best4["text"] = "４. "
+            best5["text"] = "５. "
             bestpc1["text"] = ""
             bestpc2["text"] = ""
             bestpc3["text"] = ""
@@ -166,11 +166,12 @@ def command():
             global pvs
             pvs = ["", "", "", "", ""]
             global current_board_turn
-            current_board_turn = board_turn(board.turn)
+            current_board_turn = get_turn(board.turn)
             bestpc3["fg"] = "#000000"
             bestpc2["fg"] = "#000000"
             bestpc4["fg"] = "#000000"
             bestpc5["fg"] = "#000000"
+            bestpc1["fg"] = "#000000"
         usi(cmdline)
 
 
@@ -214,9 +215,17 @@ def shogibar(line):
         if reverse == 1:
             rightgraph["bg"] = rightgraphbg
             leftgraph["bg"] = leftgraphbg
+            lwinratelabel.place(x=25, y=23, anchor=tk.W)
+            rwinratelabel.place(x=1225, y=23, anchor=tk.E)
+            ltebanlabel.place(x=25, y=100, anchor=tk.W)
+            rtebanlabel.place(x=1225, y=100, anchor=tk.E)
         else:
             rightgraph["bg"] = leftgraphbg
             leftgraph["bg"] = rightgraphbg
+            rwinratelabel.place(x=25, y=23, anchor=tk.W)
+            lwinratelabel.place(x=1225, y=23, anchor=tk.E)
+            rtebanlabel.place(x=25, y=100, anchor=tk.W)
+            ltebanlabel.place(x=1225, y=100, anchor=tk.E)
         turn = -(board.turn * 2 - 1) * reverse
         move_count = board.move_number
         depth = int(sfen[sfen.index("depth") + 1])
@@ -229,15 +238,15 @@ def shogibar(line):
             nodes = str(int(nodes / 1000000000)) + " billion"
         if king_check():
             if reverse == 1:
-                lwinratelabel["text"] = str(sente_points) + "点"
-                rwinratelabel["text"] = str(gote_points) + "点"
+                lwinratelabel["text"] = str(sente_points) + "đ"
+                rwinratelabel["text"] = str(gote_points) + "đ"
                 rightgraph["bd"] = 0
                 leftgraph["bd"] = 0
                 rightgraph["bg"] = "#FFFFFF"
                 leftgraph["bg"] = "#FFFFFF"
             else:
-                rwinratelabel["text"] = str(sente_points) + "点"
-                lwinratelabel["text"] = str(gote_points) + "点"
+                rwinratelabel["text"] = str(sente_points) + "đ"
+                lwinratelabel["text"] = str(gote_points) + "đ"
                 rightgraph["bd"] = 0
                 leftgraph["bd"] = 0
                 rightgraph["bg"] = "#FFFFFF"
@@ -246,79 +255,93 @@ def shogibar(line):
             lwinratelabel["text"] = str(round(evals[0])) + "%"
             rwinratelabel["text"] = str(100 - round(evals[0])) + "%"
         try:
-            j = [sfen[sfen.index("score") + 1], sfen[sfen.index("score") + 2], int(sfen[sfen.index("multipv") + 1])]
+            j = [sfen[sfen.index("score") + 1], sfen[sfen.index("score") + 2], int(sfen[sfen.index("multipv") + 1]),
+                 sfen[sfen.index("pv") +1:]]
             pvs[int(sfen[sfen.index("multipv") + 1]) - 1] = sfen[sfen.index("pv") + 1]
             evals[int(sfen[sfen.index("multipv") + 1]) - 1] = cook(j)
         except Exception as error:
-            print(error)
+            print(traceback.format_exc())
             if "multipv" not in sfen:
-                j = [sfen[sfen.index("score") + 1], sfen[sfen.index("score") + 2], 1]
+                j = [sfen[sfen.index("score") + 1], sfen[sfen.index("score") + 2], 1, sfen[sfen.index("pv") +1:]]
                 pvs[0] = sfen[sfen.index("pv") + 1]
                 evals[0] = cook(j)
         if pvs and pvs[0] != "":
-            best1["text"] = "1. " + KI2.move_to_ki2(board.move_from_usi(pvs[0]), board)
+            best1["text"] = "１. " + KI2.move_to_ki2(board.move_from_usi(pvs[0]), board)
         if len(pvs) >= 2 and pvs[1] != "":
-            best2["text"] = "2. " + KI2.move_to_ki2(board.move_from_usi(pvs[1]), board)
+            best2["text"] = "２. " + KI2.move_to_ki2(board.move_from_usi(pvs[1]), board)
         if len(pvs) >= 3 and pvs[2] != "":
-            best3["text"] = "3. " + KI2.move_to_ki2(board.move_from_usi(pvs[2]), board)
+            best3["text"] = "３. " + KI2.move_to_ki2(board.move_from_usi(pvs[2]), board)
         if len(pvs) >= 4 and pvs[3] != "":
-            best4["text"] = "4. " + KI2.move_to_ki2(board.move_from_usi(pvs[3]), board)
+            best4["text"] = "４. " + KI2.move_to_ki2(board.move_from_usi(pvs[3]), board)
         if len(pvs) >= 5 and pvs[4] != "":
-            best5["text"] = "5. " + KI2.move_to_ki2(board.move_from_usi(pvs[4]), board)
+            best5["text"] = "５. " + KI2.move_to_ki2(board.move_from_usi(pvs[4]), board)
         if evals and evals[0] is not None:
             if current_board_turn == 1:
                 bestpc1["text"] = str(round(evals[0])) + "%"
             else:
                 bestpc1["text"] = str(100 - round(evals[0])) + "%"
-            if math.floor(evals[0]) <= 10:
+            if math.floor(evals[0]) <= 10 and current_board_turn == 1:
+                bestpc1["fg"] = dangercolor
+            if math.floor(evals[0]) >= 90 and current_board_turn == -1:
                 bestpc1["fg"] = dangercolor
         if len(evals) >= 2 and evals[1] is not None and pvs[1]:
             if current_board_turn == -1:
                 bestpc2["text"] = "-" + str(math.floor(evals[1]) - math.floor(evals[0])) + "%"
             else:
                 bestpc2["text"] = str(math.floor(evals[1]) - math.floor(evals[0])) + "%"
-            if evals[1] <= 10:
+            if math.floor(evals[1]) <= 10 and current_board_turn == 1:
+                bestpc2["fg"] = dangercolor
+            if math.floor(evals[1]) >= 90 and current_board_turn == -1:
                 bestpc2["fg"] = dangercolor
         if len(evals) >= 3 and evals[2] is not None and pvs[2]:
             if current_board_turn == -1:
                 bestpc3["text"] = "-" + str(math.floor(evals[2]) - math.floor(evals[0])) + "%"
             else:
                 bestpc3["text"] = str(math.floor(evals[2]) - math.floor(evals[0])) + "%"
-            if evals[2] <= 10:
+            if math.floor(evals[2]) <= 10 and current_board_turn == 1:
+                bestpc3["fg"] = dangercolor
+            if math.floor(evals[2]) >= 90 and current_board_turn == -1:
                 bestpc3["fg"] = dangercolor
         if len(evals) >= 4 and evals[3] is not None and pvs[3]:
             if current_board_turn == -1:
                 bestpc4["text"] = "-" + str(math.floor(evals[3]) - math.floor(evals[0])) + "%"
             else:
                 bestpc4["text"] = str(math.floor(evals[3]) - math.floor(evals[0])) + "%"
-            if evals[3] <= 10:
+            if math.floor(evals[3]) <= 10 and current_board_turn == 1:
+                bestpc4["fg"] = dangercolor
+            if math.floor(evals[3]) >= 90 and current_board_turn == -1:
                 bestpc4["fg"] = dangercolor
         if len(evals) >= 5 and evals[4] is not None and pvs[4]:
             if current_board_turn == -1:
                 bestpc5["text"] = "-" + str(math.floor(evals[4]) - math.floor(evals[0])) + "%"
             else:
                 bestpc5["text"] = str(math.floor(evals[4]) - math.floor(evals[0])) + "%"
-            if evals[4] <= 10:
+            if math.floor(evals[4]) <= 10 and current_board_turn == 1:
+                bestpc5["fg"] = dangercolor
+            if math.floor(evals[4]) >= 90 and current_board_turn == -1:
                 bestpc5["fg"] = dangercolor
         if len(pvs) > 0 and move_count == 1 and pvs[0] != "":
-            saizen["text"] = "Move " + str(move_count) + " | Best move: " + KI2.move_to_ki2(
-                board.move_from_usi(pvs[0]), board)
+            saizen["text"] = "Best move: " + KI2.move_to_ki2(board.move_from_usi(pvs[0]), board)
         elif len(pvs) > 0 and pvs[0] != "":
-            saizen["text"] = "Last move: " + strlastmove + " | Move " + str(
-                move_count) + " | Best move: " + KI2.move_to_ki2(board.move_from_usi(pvs[0]), board)
+            saizen["text"] = "Move " + str(
+                move_count - 1) + ": " + strlastmove + " | Move " + str(move_count) + " | Best move: " + KI2.move_to_ki2(
+                board.move_from_usi(pvs[0]), board)
         if evals and evals[0] is not None:
-            leftgraph.place(x=300, y=65, width=round(evals[0]) * 12, height=20)
+            if reverse == -1:
+                leftgraph.place(x=25, y=65, width=1200 - round(evals[0]) * 12, height=20)
+            elif reverse == 1:
+                leftgraph.place(x=25, y=65, width= round(evals[0]) * 12, height=20)
         tansaku["text"] = engine + " | Depth: " + str(depth) + " moves | " + nodes + " nodes"
-        if turn == 1 and ltebanlabel["text"] != "Turn":
+        if turn * reverse == 1:
             ltebanlabel["text"] = "Turn"
             ltebanlabel["bg"] = "#C1272D"
             rtebanlabel["text"] = ""
-            rtebanlabel["bg"] = "#ffffff"
-        elif turn == -1 and rtebanlabel["text"] != "Turn":
+            rtebanlabel["bg"] = bgcolor
+        else:
             rtebanlabel["text"] = "Turn"
             rtebanlabel["bg"] = "#C1272D"
             ltebanlabel["text"] = ""
-            ltebanlabel["bg"] = "#ffffff"
+            ltebanlabel["bg"] = bgcolor
         if king_check():
             leftgraph["bg"] = "#FFFFFF"
             rightgraph["bg"] = "#FFFFFF"
@@ -346,110 +369,69 @@ t2.start()
 
 # Tkinter表示
 root = tk.Tk()
-root.title("configure names")
 root.configure(bg=bgcolor)
 bar = tk.Toplevel(root)
 bar.wm_attributes("-topmost", 1)
-bar.geometry("1800x120")
-bar.minsize(width=1800, height=120)
+bar.geometry("1250x120")
+bar.minsize(width=1250, height=120)
 bar.configure(bg=bgcolor)
-bar.title("Thanh đánh giá")
+bar.title("Bar")
+suggestionwindow = tk.Toplevel(root)
+suggestionwindow.wm_attributes("-topmost",1)
+suggestionwindow.configure(bg=bgcolor)
+suggestionwindow.geometry("900x106")
+suggestionwindow.title("Best line")
+suggestionlabel = tk.Label(suggestionwindow,text="",font=("Be Vietnam Pro", 20), bg=bgcolor, fg="#000000")
+suggestionlabel.place(x=25,y=25)
 # 勝率ラベル
-lwinratelabel = tk.Label(bar, text="50%", font=(percentfont, 45), bg=bgcolor, fg=fgcolor)
-lwinratelabel.place(x=300, y=33, anchor=tk.W)
-rwinratelabel = tk.Label(bar, text="50%", font=(percentfont, 45), bg=bgcolor, fg=fgcolor)
-rwinratelabel.place(x=1495, y=33, anchor=tk.E)
+lwinratelabel = tk.Label(bar, text="50%", font=(barfont, 45), bg=bgcolor, fg=fgcolor)
+lwinratelabel.place(x=25, y=23, anchor=tk.W)
+rwinratelabel = tk.Label(bar, text="50%", font=(barfont, 45), bg=bgcolor, fg=fgcolor)
+rwinratelabel.place(x=1225, y=23, anchor=tk.E)
 
 # mate label
 tsumelabel = tk.Label(bar, text="", font=(barfont, 14), bg=bgcolor, fg=fgcolor)
-tsumelabel.place(x=1005, y=50, anchor=tk.CENTER)
+tsumelabel.place(x=600, y=50, anchor=tk.CENTER)
 
 # 手番ラベル
 ltebanlabel = tk.Label(bar, text="", font=(barfont, 14), bg="#ffffff", fg="#ffffff")
-ltebanlabel.place(x=300, y=100, anchor=tk.W)
+ltebanlabel.place(x=25, y=100, anchor=tk.W)
 rtebanlabel = tk.Label(bar, text="", font=(barfont, 14), bg="#ffffff", fg="#ffffff")
-rtebanlabel.place(x=1495, y=100, anchor=tk.E)
+rtebanlabel.place(x=1225, y=100, anchor=tk.E)
 
 # 最善手ラベル
-saizen = tk.Label(bar, text="Move 0 | Best move: ", font=(barfont, 15), bg=bgcolor, fg=fgcolor)
-saizen.place(x=870, y=24, anchor=tk.CENTER)
+saizen = tk.Label(bar, text="Move 0 | Best move: ", font=(barfont, 20), bg=bgcolor, fg=fgcolor)
+saizen.place(x=600, y=24, anchor=tk.CENTER)
 # 探索ラベル
-tansaku = tk.Label(bar, text="Suisho 5 | Depth: 0 moves | 0 nodes", font=(barfont, 12), bg=bgcolor, fg=fgcolor)
-tansaku.place(x=905, y=100, anchor=tk.CENTER)
+tansaku = tk.Label(bar, text="Suisho 5 | Depth: 0 moves | 0 nodes", font=(percentfont, 12), bg=bgcolor, fg=fgcolor)
+tansaku.place(x=600, y=100, anchor=tk.CENTER)
 
 # 評価値バー描画
 rightgraph = tk.Label(bar, text="", bg=rightgraphbg, relief=tk.SOLID, bd=3)
-rightgraph.place(x=300, y=65, width=1200, height=20)
+rightgraph.place(x=25, y=65, width=1200, height=20)
 leftgraph = tk.Label(bar, text="", bg=leftgraphbg, relief=tk.SOLID, bd=3)
-leftgraph.place(x=300, y=65, width=600, height=20)
+leftgraph.place(x=25, y=65, width=600, height=20)
 bln = tk.BooleanVar()
 bln.set(False)
 check = tk.Checkbutton(bar, variable=bln, text="Reverse", font=(barfont, 15), bg=bgcolor, fg=fgcolor,
                        activeforeground=fgcolor)
 check.place(x=50, y=150)
 # 左右反転チェック
-
-sframe = tk.Frame(bar)
-sframe.configure(bg='white', borderwidth=0, highlightthickness=0)
-siframe = tk.Frame(bar)
-giframe = tk.Frame(bar)
-gframe = tk.Frame(bar)
-gframe.configure(bg='white', borderwidth=0, highlightthickness=0)
-sframe.pack()
-gframe.pack()
-sframe.place(x=0, y=0)
-siframe.place(x=80,y=0)
-gframe.place(x=1720, y=0)
-giframe.place(x=1540,y=0)
-simg = ImageTk.PhotoImage(sente_image.resize((80, 120)))
-gimg = ImageTk.PhotoImage(gote_image.resize((80, 120)))
-slabel = tk.Label(sframe, image=simg)
-slabel.pack()
-glabel = tk.Label(gframe, image=gimg)
-glabel.pack()
-simglabel = tk.Label(siframe)
-simglabel.pack()
-gimglabel = tk.Label(giframe)
-gimglabel.pack()
-sente_name = tk.Entry(root)
-gote_name = tk.Entry(root)
-sente_rank = tk.Entry(root)
-gote_rank = tk.Entry(root)
-srankl = tk.Label(bar, text="", font=(percentfont, 12), bg=bgcolor, fg=fgcolor, justify='left')
-snamel = tk.Label(bar, text="", font=(percentfont, 15), bg=bgcolor, fg=fgcolor, justify='left')
-grankl = tk.Label(bar, text="", font=(percentfont, 12), bg=bgcolor, fg=fgcolor, justify='right')
-gnamel = tk.Label(bar, text="", font=(percentfont, 15), bg=bgcolor, fg=fgcolor, justify="right")
-snamel.place(x=85, y=35)
-srankl.place(x=85, y=70)
-gnamel.place(x=1520, y=35)
-grankl.place(x=1520, y=70)
-tk.Label(root, text='Sente name (max 5 char)').grid(row=0)
-tk.Label(root, text='Gote name (max 5 char)').grid(row=1)
-tk.Label(root, text='Sente rank (max 2 char)').grid(row=2)
-tk.Label(root, text='Gote rank (max 2 char)').grid(row=3)
-tk.Button(root, text='Update', command=update).grid(row=4)
-tk.Button(root, text='Set Sente name image', command=sopen_file_dialog).grid(row=5)
-tk.Button(root, text='Set Gote name image', command=gopen_file_dialog).grid(row=6)
-sente_name.grid(row=0, column=1)
-gote_name.grid(row=1, column=1)
-sente_rank.grid(row=2, column=1)
-gote_rank.grid(row=3, column=1)
-bestmoves = tk.Toplevel(root)
-bestmoves.geometry("380x220")
-bestmoves.wm_attributes("-topmost", 1)
-bestmoves.minsize(width=380, height=220)
-bestmoves.configure(bg=bgcolor)
-bestmoves.title("Các nước đi khác")
-best1 = tk.Label(bestmoves, text="1.", font=(percentfont, 20), bg=bgcolor, fg=fgcolor)
-best2 = tk.Label(bestmoves, text="2.", font=(percentfont, 20), bg=bgcolor, fg=fgcolor)
-best3 = tk.Label(bestmoves, text="3.", font=(percentfont, 20), bg=bgcolor, fg=fgcolor)
-best4 = tk.Label(bestmoves, text="4.", font=(percentfont, 20), bg=bgcolor, fg=fgcolor)
-best5 = tk.Label(bestmoves, text="5.", font=(percentfont, 20), bg=bgcolor, fg=fgcolor)
-bestpc1 = tk.Label(bestmoves, text="", font=(percentfont, 20), bg=bgcolor, fg=fgcolor)
-bestpc2 = tk.Label(bestmoves, text="0%", font=(percentfont, 20), bg=bgcolor, fg=fgcolor)
-bestpc3 = tk.Label(bestmoves, text="0%", font=(percentfont, 20), bg=bgcolor, fg=fgcolor)
-bestpc4 = tk.Label(bestmoves, text="0%", font=(percentfont, 20), bg=bgcolor, fg=fgcolor)
-bestpc5 = tk.Label(bestmoves, text="0%", font=(percentfont, 20), bg=bgcolor, fg=fgcolor)
+root.geometry("380x220")
+root.wm_attributes("-topmost", 1)
+root.minsize(width=380, height=220)
+root.configure(bg=bgcolor)
+root.title("Other moves")
+best1 = tk.Label(root, text="１.", font=(percentfont, 20), bg=bgcolor, fg="#000000")
+best2 = tk.Label(root, text="２.", font=(percentfont, 20), bg=bgcolor, fg="#000000")
+best3 = tk.Label(root, text="３.", font=(percentfont, 20), bg=bgcolor, fg="#000000")
+best4 = tk.Label(root, text="４.", font=(percentfont, 20), bg=bgcolor, fg="#000000")
+best5 = tk.Label(root, text="５.", font=(percentfont, 20), bg=bgcolor, fg="#000000")
+bestpc1 = tk.Label(root, text="", font=(percentfont, 20), bg=bgcolor, fg="#000000")
+bestpc2 = tk.Label(root, text="0%", font=(percentfont, 20), bg=bgcolor, fg="#000000")
+bestpc3 = tk.Label(root, text="0%", font=(percentfont, 20), bg=bgcolor, fg="#000000")
+bestpc4 = tk.Label(root, text="0%", font=(percentfont, 20), bg=bgcolor, fg="#000000")
+bestpc5 = tk.Label(root, text="0%", font=(percentfont, 20), bg=bgcolor, fg="#000000")
 best1.place(x=50, y=33, anchor=tk.W)
 best2.place(x=50, y=73, anchor=tk.W)
 best3.place(x=50, y=113, anchor=tk.W)
