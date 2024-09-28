@@ -82,7 +82,7 @@ def cook(c):
         if cureval > 99:
             return 99
         else:
-            return cureval
+            return round(cureval)
 
 
 bestpercent = ""
@@ -280,7 +280,7 @@ def shogibar(line):
             best5["text"] = "５. " + KI2.move_to_ki2(board.move_from_usi(pvs[4]), board)
         if len(evals) >= 2 and evals[1] is not None and pvs[1]:
             if current_board_turn == -1:
-                bestpc2["text"] = str(math.floor(evals[1]) - math.floor(evals[0])) + "%"
+                bestpc2["text"] = str((math.floor(evals[1]) - math.floor(evals[0]))*-1) + "%"
             else:
                 bestpc2["text"] = str(math.floor(evals[1]) - math.floor(evals[0])) + "%"
             if math.floor(evals[1]) <= 10 and current_board_turn == 1:
@@ -291,7 +291,7 @@ def shogibar(line):
                 bestpc2["fg"] = leftgraphbg
         if len(evals) >= 3 and evals[2] is not None and pvs[2]:
             if current_board_turn == -1:
-                bestpc3["text"] = str(math.floor(evals[2]) - math.floor(evals[0])) + "%"
+                bestpc3["text"] = str((math.floor(evals[2]) - math.floor(evals[0]))*-1) + "%"
             else:
                 bestpc3["text"] = str(math.floor(evals[2]) - math.floor(evals[0])) + "%"
             if math.floor(evals[2]) <= 10 and current_board_turn == 1:
@@ -302,7 +302,7 @@ def shogibar(line):
                 bestpc3["fg"] = leftgraphbg
         if len(evals) >= 4 and evals[3] is not None and pvs[3]:
             if current_board_turn == -1:
-                bestpc4["text"] = str(math.floor(evals[3]) - math.floor(evals[0])) + "%"
+                bestpc4["text"] = str((math.floor(evals[3]) - math.floor(evals[0])) * -1) + "%"
             else:
                 bestpc4["text"] = str(math.floor(evals[3]) - math.floor(evals[0])) + "%"
             if math.floor(evals[3]) <= 10 and current_board_turn == 1:
@@ -313,7 +313,7 @@ def shogibar(line):
                 bestpc4["fg"] = leftgraphbg
         if len(evals) >= 5 and evals[4] is not None and pvs[4]:
             if current_board_turn == -1:
-                bestpc5["text"] = str(math.floor(evals[4]) - math.floor(evals[0])) + "%"
+                bestpc5["text"] = str((math.floor(evals[4]) - math.floor(evals[0]))*-1) + "%"
             else:
                 bestpc5["text"] = str(math.floor(evals[4]) - math.floor(evals[0])) + "%"
             if math.floor(evals[4]) <= 10 and current_board_turn == 1:
