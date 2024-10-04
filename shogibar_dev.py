@@ -11,8 +11,8 @@ import numpy as np
 
 # エンジン名・フォント・文字色・背景色
 engine = "水匠５"  # 水匠5
-barfont = "Noto Sans JP"  # BIZ UDGothic
-percentfont = "Noto Sans JP SemiBold"  # BIZ UDGothic
+barfont = "Zen Antique Soft"  # BIZ UDGothic
+percentfont = "Zen Antique Soft"  # BIZ UDGothic
 bgcolor = "#ffffff"  # white
 fgcolor = "black"
 dangercolor = "#f02626"  # black
@@ -48,7 +48,7 @@ def cook(c):
                 if abs(eval) % 2 == 0:
                     test = board.copy()
                     test.push_usi(c[3][0])
-                    if test.mate_move_in_1ply() != 0 or test.mate_move(abs(eval)-1) != 0:
+                    if test.mate_move_in_1ply() != 0 or test.mate_move(abs(eval) - 1) != 0:
                         bestpc1["text"] = "(" + str(abs(eval)) + "手詰)"
                     else:
                         bestpc1["text"] = "(必至)"
@@ -115,7 +115,6 @@ def command():
         cmdline = input()
         # 局面設定
         if cmdline[:8] == "position":
-            saizen.config(font=(barfont, 20))
             global board, last_move
             board.set_position(cmdline[9:])
             global sente_camp
@@ -219,17 +218,17 @@ def shogibar(line):
         if reverse == 1:
             rightgraph["bg"] = rightgraphbg
             leftgraph["bg"] = leftgraphbg
-            lwinratelabel.place(x=25, y=23, anchor=tk.W)
-            rwinratelabel.place(x=1225, y=23, anchor=tk.E)
-            ltebanlabel.place(x=25, y=100, anchor=tk.W)
-            rtebanlabel.place(x=1225, y=100, anchor=tk.E)
+            lwinratelabel.place(x=25, y=40, anchor=tk.W)
+            rwinratelabel.place(x=1225, y=40, anchor=tk.E)
+            ltebanlabel.place(x=25, y=117, anchor=tk.W)
+            rtebanlabel.place(x=1225, y=117, anchor=tk.E)
         else:
             rightgraph["bg"] = leftgraphbg
             leftgraph["bg"] = rightgraphbg
-            rwinratelabel.place(x=25, y=23, anchor=tk.W)
-            lwinratelabel.place(x=1225, y=23, anchor=tk.E)
-            rtebanlabel.place(x=25, y=100, anchor=tk.W)
-            ltebanlabel.place(x=1225, y=100, anchor=tk.E)
+            rwinratelabel.place(x=25, y=40, anchor=tk.W)
+            lwinratelabel.place(x=1225, y=40, anchor=tk.E)
+            rtebanlabel.place(x=25, y=117, anchor=tk.W)
+            ltebanlabel.place(x=1225, y=117, anchor=tk.E)
         turn = -(board.turn * 2 - 1) * reverse
         move_count = board.move_number
         depth = int(sfen[sfen.index("depth") + 1])
@@ -279,26 +278,30 @@ def shogibar(line):
         if len(pvs) >= 5 and pvs[4] != "":
             best5["text"] = "５. " + KI2.move_to_ki2(board.move_from_usi(pvs[4]), board)
         if len(evals) >= 2 and evals[1] is not None and pvs[1]:
-            bestpc2["text"] = str((math.floor(evals[1]) - math.floor(evals[0]))*current_board_turn) + "%"
-            if (math.floor(evals[1]) <= 10 and current_board_turn == 1) or (math.floor(evals[1]) >= 90 and current_board_turn == -1):
+            bestpc2["text"] = str((math.floor(evals[1]) - math.floor(evals[0])) * current_board_turn) + "%"
+            if (math.floor(evals[1]) <= 10 and current_board_turn == 1) or (
+                    math.floor(evals[1]) >= 90 and current_board_turn == -1):
                 bestpc2["fg"] = dangercolor
             else:
                 bestpc2["fg"] = leftgraphbg
         if len(evals) >= 3 and evals[2] is not None and pvs[2]:
-            bestpc3["text"] = str((math.floor(evals[2]) - math.floor(evals[0]))*current_board_turn) + "%"
-            if (math.floor(evals[2]) <= 10 and current_board_turn == 1) or (math.floor(evals[2]) >= 90 and current_board_turn == -1):
+            bestpc3["text"] = str((math.floor(evals[2]) - math.floor(evals[0])) * current_board_turn) + "%"
+            if (math.floor(evals[2]) <= 10 and current_board_turn == 1) or (
+                    math.floor(evals[2]) >= 90 and current_board_turn == -1):
                 bestpc3["fg"] = dangercolor
             else:
                 bestpc3["fg"] = leftgraphbg
         if len(evals) >= 4 and evals[3] is not None and pvs[3]:
             bestpc4["text"] = str((math.floor(evals[3]) - math.floor(evals[0])) * current_board_turn) + "%"
-            if (math.floor(evals[3]) <= 10 and current_board_turn == 1) or (math.floor(evals[3]) >= 90 and current_board_turn == -1):
+            if (math.floor(evals[3]) <= 10 and current_board_turn == 1) or (
+                    math.floor(evals[3]) >= 90 and current_board_turn == -1):
                 bestpc4["fg"] = dangercolor
             else:
                 bestpc4["fg"] = leftgraphbg
         if len(evals) >= 5 and evals[4] is not None and pvs[4]:
-            bestpc5["text"] = str((math.floor(evals[4]) - math.floor(evals[0]))*current_board_turn) + "%"
-            if (math.floor(evals[4]) <= 10 and current_board_turn == 1) or (math.floor(evals[4]) >= 90 and current_board_turn == -1):
+            bestpc5["text"] = str((math.floor(evals[4]) - math.floor(evals[0])) * current_board_turn) + "%"
+            if (math.floor(evals[4]) <= 10 and current_board_turn == 1) or (
+                    math.floor(evals[4]) >= 90 and current_board_turn == -1):
                 bestpc5["fg"] = dangercolor
             else:
                 bestpc5["fg"] = leftgraphbg
@@ -306,14 +309,15 @@ def shogibar(line):
             saizen["text"] = "最善手: " + KI2.move_to_ki2(board.move_from_usi(pvs[0]), board)
         elif len(pvs) > 0 and pvs[0] != "":
             saizen["text"] = str(
-                move_count - 1) + "手目" + strlastmove + "｜" + str(
-                move_count) + "手目｜最善手：" + KI2.move_to_ki2(
+                move_count - 1) + "手目" + strlastmove + "｜次" + str(
+                move_count) + "手目" + KI2.move_to_ki2(
                 board.move_from_usi(pvs[0]), board)
+        countlabel["text"] = str(move_count)
         if evals and evals[0] is not None:
             if reverse == -1:
-                leftgraph.place(x=25, y=65, width=1200 - round(evals[0]) * 12, height=20)
+                leftgraph.place(x=25, y=82, width=1200 - round(evals[0]) * 12, height=20)
             elif reverse == 1:
-                leftgraph.place(x=25, y=65, width=round(evals[0]) * 12, height=20)
+                leftgraph.place(x=25, y=82, width=round(evals[0]) * 12, height=20)
         tansaku["text"] = engine + "｜深さ：" + str(depth) + "手｜" + nodes + "局面考慮中"
         if turn * reverse == 1:
             ltebanlabel["text"] = "手番"
@@ -355,8 +359,8 @@ root = tk.Tk()
 root.configure(bg=bgcolor)
 bar = tk.Toplevel(root)
 bar.wm_attributes("-topmost", 1)
-bar.geometry("1250x120")
-bar.minsize(width=1250, height=120)
+bar.geometry("1250x137")
+bar.minsize(width=1250, height=137)
 bar.configure(bg=bgcolor)
 bar.title("Bar")
 suggestionwindow = tk.Toplevel(root)
@@ -367,59 +371,69 @@ suggestionwindow.title("Best line")
 suggestionlabel = tk.Label(suggestionwindow, text="", font=(barfont, 20), bg=bgcolor, fg="#000000")
 suggestionlabel.place(x=25, y=25)
 # 勝率ラベル
-lwinratelabel = tk.Label(bar, text="50%", font=(barfont, 45), bg=bgcolor, fg=fgcolor)
-lwinratelabel.place(x=25, y=27, anchor=tk.W)
-rwinratelabel = tk.Label(bar, text="50%", font=(barfont, 45), bg=bgcolor, fg=fgcolor)
-rwinratelabel.place(x=1225, y=27, anchor=tk.E)
+lwinratelabel = tk.Label(bar, text="50%", font=(barfont, 55), bg=bgcolor, fg=fgcolor)
+lwinratelabel.place(x=25, y=40, anchor=tk.W)
+rwinratelabel = tk.Label(bar, text="50%", font=(barfont, 55), bg=bgcolor, fg=fgcolor)
+rwinratelabel.place(x=1225, y=40, anchor=tk.E)
 
 # 手番ラベル
 ltebanlabel = tk.Label(bar, text="", font=(barfont, 14), bg="#ffffff", fg="#ffffff")
-ltebanlabel.place(x=25, y=100, anchor=tk.W)
+ltebanlabel.place(x=25, y=117, anchor=tk.W)
 rtebanlabel = tk.Label(bar, text="", font=(barfont, 14), bg="#ffffff", fg="#ffffff")
-rtebanlabel.place(x=1225, y=100, anchor=tk.E)
+rtebanlabel.place(x=1225, y=117, anchor=tk.E)
 
 # 最善手ラベル
-saizen = tk.Label(bar, text="０手目｜最善手： ", font=(barfont, 20), bg=bgcolor, fg=fgcolor)
-saizen.place(x=600, y=24, anchor=tk.CENTER)
+saizen = tk.Label(bar, text="０手目｜最善手： ", font=(barfont, 25), bg=bgcolor, fg=fgcolor)
+saizen.place(x=600, y=35, anchor=tk.CENTER)
 # 探索ラベル
 tansaku = tk.Label(bar, text="水匠５｜深さ：０手｜０局面考慮中", font=(percentfont, 12), bg=bgcolor, fg=fgcolor)
-tansaku.place(x=600, y=100, anchor=tk.CENTER)
+tansaku.place(x=600, y=117, anchor=tk.CENTER)
 
 # 評価値バー描画
 rightgraph = tk.Label(bar, text="", bg=rightgraphbg, relief=tk.SOLID, bd=3)
-rightgraph.place(x=25, y=65, width=1200, height=20)
+rightgraph.place(x=25, y=82, width=1200, height=20)
 leftgraph = tk.Label(bar, text="", bg=leftgraphbg, relief=tk.SOLID, bd=3)
-leftgraph.place(x=25, y=65, width=600, height=20)
+leftgraph.place(x=25, y=82, width=600, height=20)
 bln = tk.BooleanVar()
 bln.set(False)
 check = tk.Checkbutton(bar, variable=bln, text="Reverse", font=(barfont, 15), bg=bgcolor, fg=fgcolor,
                        activeforeground=fgcolor)
 check.place(x=50, y=150)
 # 左右反転チェック
-root.geometry("395x220")
+
+root.geometry("395x264")
 root.wm_attributes("-topmost", 1)
-root.minsize(width=380, height=220)
+root.minsize(width=380, height=264)
 root.configure(bg=bgcolor)
 root.title("Other moves")
-best1 = tk.Label(root, text="１.", font=(percentfont, 20), bg=bgcolor, fg="#000000")
-best2 = tk.Label(root, text="２.", font=(percentfont, 20), bg=bgcolor, fg="#000000")
-best3 = tk.Label(root, text="３.", font=(percentfont, 20), bg=bgcolor, fg="#000000")
-best4 = tk.Label(root, text="４.", font=(percentfont, 20), bg=bgcolor, fg="#000000")
-best5 = tk.Label(root, text="５.", font=(percentfont, 20), bg=bgcolor, fg="#000000")
-bestpc1 = tk.Label(root, text="-", font=(percentfont, 20), bg=bgcolor, fg="#000000")
-bestpc2 = tk.Label(root, text="0%", font=(percentfont, 20), bg=bgcolor, fg="#000000")
-bestpc3 = tk.Label(root, text="0%", font=(percentfont, 20), bg=bgcolor, fg="#000000")
-bestpc4 = tk.Label(root, text="0%", font=(percentfont, 20), bg=bgcolor, fg="#000000")
-bestpc5 = tk.Label(root, text="0%", font=(percentfont, 20), bg=bgcolor, fg="#000000")
-best1.place(x=30, y=33, anchor=tk.W)
-best2.place(x=30, y=73, anchor=tk.W)
-best3.place(x=30, y=113, anchor=tk.W)
-best4.place(x=30, y=153, anchor=tk.W)
-best5.place(x=30, y=193, anchor=tk.W)
-bestpc1.place(x=370, y=33, anchor=tk.E)
-bestpc2.place(x=370, y=73, anchor=tk.E)
-bestpc3.place(x=370, y=113, anchor=tk.E)
-bestpc4.place(x=370, y=153, anchor=tk.E)
-bestpc5.place(x=370, y=193, anchor=tk.E)
+title = tk.Label(root, text="候補手", font=(barfont, 20), bg=bgcolor, fg="#000000")
+best1 = tk.Label(root, text="１.", font=(barfont, 20), bg=bgcolor, fg="#000000")
+best2 = tk.Label(root, text="２.", font=(barfont, 20), bg=bgcolor, fg="#000000")
+best3 = tk.Label(root, text="３.", font=(barfont, 20), bg=bgcolor, fg="#000000")
+best4 = tk.Label(root, text="４.", font=(barfont, 20), bg=bgcolor, fg="#000000")
+best5 = tk.Label(root, text="５.", font=(barfont, 20), bg=bgcolor, fg="#000000")
+bestpc1 = tk.Label(root, text="-", font=(barfont, 20), bg=bgcolor, fg="#000000")
+bestpc2 = tk.Label(root, text="0%", font=(barfont, 20), bg=bgcolor, fg="#000000")
+bestpc3 = tk.Label(root, text="0%", font=(barfont, 20), bg=bgcolor, fg="#000000")
+bestpc4 = tk.Label(root, text="0%", font=(barfont, 20), bg=bgcolor, fg="#000000")
+bestpc5 = tk.Label(root, text="0%", font=(barfont, 20), bg=bgcolor, fg="#000000")
+best1.place(x=30, y=67, anchor=tk.W)
+best2.place(x=30, y=107, anchor=tk.W)
+best3.place(x=30, y=147, anchor=tk.W)
+best4.place(x=30, y=187, anchor=tk.W)
+best5.place(x=30, y=227, anchor=tk.W)
+title.place(x=197, y=20, anchor=tk.CENTER)
+bestpc1.place(x=370, y=67, anchor=tk.E)
+bestpc2.place(x=370, y=107, anchor=tk.E)
+bestpc3.place(x=370, y=147, anchor=tk.E)
+bestpc4.place(x=370, y=187, anchor=tk.E)
+bestpc5.place(x=370, y=227, anchor=tk.E)
+movecount = tk.Toplevel(root)
+movecount.geometry("100x100")
+movecount.wm_attributes("-topmost", 1)
+movecount.title("Move count")
+countlabel = tk.Label(movecount, text="0", font=(percentfont, 40), bg=bgcolor, fg=fgcolor)
+countlabel.place(x=20, y=20)
+movecount.configure(bg=bgcolor)
 
 root.mainloop()
