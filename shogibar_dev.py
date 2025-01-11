@@ -11,8 +11,8 @@ import numpy as np
 
 # エンジン名・フォント・文字色・背景色
 engine = "水匠５"  # 水匠5
-barfont = "Zen Antique Soft"  # BIZ UDGothic
-percentfont = "Zen Antique Soft"  # BIZ UDGothic
+barfont = "Oshidashi-M-Gothic"  # BIZ UDGothic
+percentfont = "Oshidashi-M-Gothic"  # BIZ UDGothic
 bgcolor = "#ffffff"  # white
 fgcolor = "black"
 dangercolor = "#f02626"  # black
@@ -48,32 +48,44 @@ def cook(c):
                 if abs(eval) % 2 == 0:
                     test = board.copy()
                     test.push_usi(c[3][0])
-                    if test.mate_move_in_1ply() != 0 or test.mate_move(abs(eval) - 1) != 0:
-                        bestpc1["text"] = "(" + str(abs(eval)) + "手詰)"
+                    if abs(eval) - 1 <= 9:
+                        if test.mate_move_in_1ply() != 0 or test.mate_move(abs(eval) - 1) != 0:
+                            bestpc1["text"] = "(" + str(abs(eval)) + "手詰)"
+                        else:
+                            bestpc1["text"] = "(必至)"
                     else:
-                        bestpc1["text"] = "(必至)"
+                        bestpc1["text"] = "(" + str(abs(eval)) + "手詰)"
                 else:
                     test = board.copy()
-                    if test.mate_move_in_1ply() != 0 or test.mate_move(abs(eval)) != 0:
-                        bestpc1["text"] = "(" + str(abs(eval)) + "手詰)"
+                    if abs(eval) - 1 <= 9:
+                        if test.mate_move_in_1ply() != 0 or test.mate_move(abs(eval)) != 0:
+                            bestpc1["text"] = "(" + str(abs(eval)) + "手詰)"
+                        else:
+                            bestpc1["text"] = "(必至)"
                     else:
-                        bestpc1["text"] = "(必至)"
+                        bestpc1["text"] = "(" + str(abs(eval)) + "手詰)"
             return 1
         else:
             if c[2] == 1:
                 if abs(eval) % 2 == 0:
                     test = board.copy()
                     test.push_usi(c[3][0])
-                    if test.mate_move_in_1ply() != 0 or test.mate_move(abs(eval) - 1) != 0:
-                        bestpc1["text"] = "(" + str(abs(eval)) + "手詰)"
+                    if abs(eval) - 1 <= 9:
+                        if test.mate_move_in_1ply() != 0 or test.mate_move(abs(eval) - 1) != 0:
+                            bestpc1["text"] = "(" + str(abs(eval)) + "手詰)"
+                        else:
+                            bestpc1["text"] = "(必至)"
                     else:
-                        bestpc1["text"] = "(必至)"
+                        bestpc1["text"] = "(" + str(abs(eval)) + "手詰)"
                 else:
                     test = board.copy()
-                    if test.mate_move_in_1ply() != 0 or test.mate_move(abs(eval)) != 0:
-                        bestpc1["text"] = "(" + str(abs(eval)) + "手詰)"
+                    if abs(eval) - 1 <= 9:
+                        if test.mate_move_in_1ply() != 0 or test.mate_move(abs(eval)) != 0:
+                            bestpc1["text"] = "(" + str(abs(eval)) + "手詰)"
+                        else:
+                            bestpc1["text"] = "(必至)"
                     else:
-                        bestpc1["text"] = "(必至)"
+                        bestpc1["text"] = "(" + str(abs(eval)) + "手詰)"
             return 99
     else:
         cureval = 100 / (1 + math.exp(eval * current_board_turn / -1200))
@@ -336,6 +348,31 @@ def shogibar(line):
             rightgraph["bd"] = 0
 
 
+def setfont(font1, font2):
+    global barfont
+    barfont = font1
+    global percentfont
+    percentfont = font2
+    suggestionlabel.config(font=(barfont, 20))
+    lwinratelabel.config(font=(percentfont, 55))
+    rwinratelabel.config(font=(percentfont, 55))
+    ltebanlabel.config(font=(barfont, 14))
+    rtebanlabel.config(font=(barfont, 14))
+    saizen.config(font=(barfont, 25))
+    title.config(font=(barfont, 20))
+    best1.config(font=(barfont, 20))
+    best2.config(font=(barfont, 20))
+    best3.config(font=(barfont, 20))
+    best4.config(font=(barfont, 20))
+    best5.config(font=(barfont, 20))
+    bestpc1.config(font=(barfont, 20))
+    bestpc2.config(font=(barfont, 20))
+    bestpc3.config(font=(barfont, 20))
+    bestpc4.config(font=(barfont, 20))
+    bestpc5.config(font=(barfont, 20))
+    countlabel.config(font=(percentfont, 40))
+
+
 # コマンド受付と出力は並列処理(Tkinterとは別に動かす必要があるため)
 t = threading.Thread(target=output, daemon=True)
 t.start()
@@ -355,14 +392,17 @@ t2 = threading.Thread(target=command, daemon=True)
 t2.start()
 
 # Tkinter表示
+
 root = tk.Tk()
 root.configure(bg=bgcolor)
+
 bar = tk.Toplevel(root)
 bar.wm_attributes("-topmost", 1)
 bar.geometry("1250x137")
 bar.minsize(width=1250, height=137)
 bar.configure(bg=bgcolor)
 bar.title("Bar")
+
 suggestionwindow = tk.Toplevel(root)
 suggestionwindow.wm_attributes("-topmost", 1)
 suggestionwindow.configure(bg=bgcolor)
@@ -371,9 +411,9 @@ suggestionwindow.title("Best line")
 suggestionlabel = tk.Label(suggestionwindow, text="", font=(barfont, 20), bg=bgcolor, fg="#000000")
 suggestionlabel.place(x=25, y=25)
 # 勝率ラベル
-lwinratelabel = tk.Label(bar, text="50%", font=(barfont, 55), bg=bgcolor, fg=fgcolor)
+lwinratelabel = tk.Label(bar, text="50%", font=(percentfont, 55), bg=bgcolor, fg=fgcolor)
 lwinratelabel.place(x=25, y=40, anchor=tk.W)
-rwinratelabel = tk.Label(bar, text="50%", font=(barfont, 55), bg=bgcolor, fg=fgcolor)
+rwinratelabel = tk.Label(bar, text="50%", font=(percentfont, 55), bg=bgcolor, fg=fgcolor)
 rwinratelabel.place(x=1225, y=40, anchor=tk.E)
 
 # 手番ラベル
@@ -400,6 +440,19 @@ check = tk.Checkbutton(bar, variable=bln, text="Reverse", font=(barfont, 15), bg
                        activeforeground=fgcolor)
 check.place(x=50, y=150)
 # 左右反転チェック
+
+fontwindow = tk.Toplevel(root)
+fontwindow.title("Set font")
+label1 = tk.Label(fontwindow, text="Bar font")
+label1.grid(row=0, column=0)
+label2 = tk.Label(fontwindow, text="Percent font")
+label2.grid(row=1, column=0)
+barfontbox = tk.Entry(fontwindow)
+barfontbox.grid(row=0, column=1)
+percentfontbox = tk.Entry(fontwindow)
+percentfontbox.grid(row=1, column=1)
+updatebtn = tk.Button(fontwindow, command=lambda: setfont(barfontbox.get(), percentfontbox.get()), text="Set font")
+updatebtn.grid(row=2)
 
 root.geometry("395x264")
 root.wm_attributes("-topmost", 1)
@@ -429,7 +482,7 @@ bestpc3.place(x=370, y=147, anchor=tk.E)
 bestpc4.place(x=370, y=187, anchor=tk.E)
 bestpc5.place(x=370, y=227, anchor=tk.E)
 movecount = tk.Toplevel(root)
-movecount.geometry("100x100")
+movecount.geometry("100x200")
 movecount.wm_attributes("-topmost", 1)
 movecount.title("Move count")
 countlabel = tk.Label(movecount, text="0", font=(percentfont, 40), bg=bgcolor, fg=fgcolor)
