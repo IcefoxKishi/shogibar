@@ -1,0 +1,499 @@
+import math
+import sys
+import numpy as np
+
+from cshogi import *
+from cshogi import KI2
+import threading
+import subprocess
+import tkinter as tk
+from kitao_kawasaki import move_to_ktkw
+
+# エンジン名・フォント・文字色・背景色
+engine = "YANEURAOU V8.30"  # 水匠5
+barfont = "UDEV Gothic 35NF"  # BIZ UDGothic
+percentfont = "UDEV Gothic 35NF Bold"  # BIZ UDGothic
+bgcolor = "#00ff00"  # white
+fgcolor = "#00ccff"
+dangercolor = "#f02626"  # black
+turnfgcolor = "#00007f"  # #00007f
+leftgraphbg = "#00ccff"  # #000000
+rightgraphbg = "#111111"  # #ffffff
+strlastmove = ""
+evals = [0, 0, 0, 0, 0]
+piece_points = [0, 1, 1, 1, 1, 5, 5, 1, 0, 1, 1, 1, 1, 5, 5, 0, 0, 1, 1, 1, 1, 5, 5, 1, 0, 1, 1, 1, 1, 5, 5]
+piece_in_hand_value = [1, 1, 1, 1, 1, 5, 5]
+gote_points = 0
+sente_points = 0
+sente_camp = []
+gote_camp = []
+pvs = ["", "", "", "", ""]
+current_board_turn = 1
+values = []
+
+
+def cook(c):
+    eval = int(c[1])
+    if c[2] == 1:
+        skibidi = board.copy()
+        tolabel = ""
+        for move in c[3]:
+            tolabel += move_to_ktkw(skibidi.move_from_usi(move), skibidi) + " "
+            skibidi.push_usi(move)
+        suggestionlabel["text"] = tolabel
+    if c[0] == "mate":
+        moves = eval * current_board_turn
+        if moves < 0:
+            if c[2] == 1:
+                if abs(eval) % 2 == 0:
+                    test = board.copy()
+                    test.push_usi(c[3][0])
+                    if abs(eval) - 1 <= 9:
+                        if test.mate_move_in_1ply() != 0 or test.mate_move(abs(eval) - 1) != 0:
+                            bestpc1["text"] = "(#" + str(abs(eval)) + ")"
+                        else:
+                            bestpc1["text"] = "(HISSHI)"
+                    else:
+                        bestpc1["text"] = "(#" + str(abs(eval)) + ")"
+                else:
+                    test = board.copy()
+                    if abs(eval) - 1 <= 9:
+                        if test.mate_move_in_1ply() != 0 or test.mate_move(abs(eval)) != 0:
+                            bestpc1["text"] = "(#" + str(abs(eval)) + ")"
+                        else:
+                            bestpc1["text"] = "(HISSHI)"
+                    else:
+                        bestpc1["text"] = "(#" + str(abs(eval)) + ")"
+            return 1
+        else:
+            if c[2] == 1:
+                if abs(eval) % 2 == 0:
+                    test = board.copy()
+                    test.push_usi(c[3][0])
+                    if abs(eval) - 1 <= 9:
+                        if test.mate_move_in_1ply() != 0 or test.mate_move(abs(eval) - 1) != 0:
+                            bestpc1["text"] = "(#" + str(abs(eval)) + ")"
+                        else:
+                            bestpc1["text"] = "(HISSHI)"
+                    else:
+                        bestpc1["text"] = "(#" + str(abs(eval)) + ")"
+                else:
+                    test = board.copy()
+                    if abs(eval) - 1 <= 9:
+                        if test.mate_move_in_1ply() != 0 or test.mate_move(abs(eval)) != 0:
+                            bestpc1["text"] = "(#" + str(abs(eval)) + ")"
+                        else:
+                            bestpc1["text"] = "(HISSHI)"
+                    else:
+                        bestpc1["text"] = "(#" + str(abs(eval)) + ")"
+            return 99
+    else:
+        cureval = 100 / (1 + math.exp(eval * current_board_turn / -1200))
+        if cureval < 1:
+            return 1
+        if cureval > 99:
+            return 99
+        else:
+            return round(cureval)
+
+
+bestpercent = ""
+bestpercent2 = ""
+
+# 外部エンジン起動
+shogi = subprocess.Popen('.\YaneuraOu_NNUE_halfKP256-V830Git_AVX2.exe', stdin=subprocess.PIPE,
+                         stdout=subprocess.PIPE,
+                         encoding="UTF-8")
+board = Board()
+scrap = Board()
+
+
+def king_check():
+    if 8 in gote_camp and 24 in sente_camp:
+        return True
+    else:
+        return False
+
+
+def get_turn(c):
+    if c == 0:
+        return 1
+    if c == 1:
+        return -1
+
+
+def command():
+    while True:
+        cmdline = input()
+        # 局面設定
+        if cmdline[:8] == "position":
+            global board, last_move
+            board.set_position(cmdline[9:])
+            global sente_camp
+            sente_camp = [board.piece(G1), board.piece(G2), board.piece(G3), board.piece(G4), board.piece(G5),
+                          board.piece(G6), board.piece(G7), board.piece(G8), board.piece(G9), board.piece(H1),
+                          board.piece(H2), board.piece(H3), board.piece(H4), board.piece(H5), board.piece(H6),
+                          board.piece(H7), board.piece(H8), board.piece(H9), board.piece(I1), board.piece(I2),
+                          board.piece(I3), board.piece(I4), board.piece(I5), board.piece(I6), board.piece(I7),
+                          board.piece(I8), board.piece(I9)]
+            global gote_camp
+            gote_camp = [board.piece(A1), board.piece(A2), board.piece(A3), board.piece(A4), board.piece(A5),
+                         board.piece(A6), board.piece(A7), board.piece(A8), board.piece(A9), board.piece(B1),
+                         board.piece(B2), board.piece(B3), board.piece(B4), board.piece(B5), board.piece(B6),
+                         board.piece(B7), board.piece(B8), board.piece(B9), board.piece(C1), board.piece(C2),
+                         board.piece(C3), board.piece(C4), board.piece(C5), board.piece(C6), board.piece(C7),
+                         board.piece(C8), board.piece(C9)]
+            global scrap
+            if board.history:
+                scrap.set_position(cmdline[9:][:-5])
+                last_move = board.history[-1]
+            global strlastmove
+            if board.history:
+                strlastmove = move_to_ktkw(last_move, scrap)
+            prev = cmdline.split()
+            prev.pop(0)
+            best1["text"] = "1. "
+            best2["text"] = "2. "
+            best3["text"] = "3. "
+            best4["text"] = "4. "
+            best5["text"] = "5. "
+            bestpc1["text"] = "-"
+            bestpc2["text"] = ""
+            bestpc3["text"] = ""
+            bestpc4["text"] = ""
+            bestpc5["text"] = ""
+            global evals
+            global gote_points
+            global sente_points
+            gote_points = 0
+            sente_points = 0
+            for piece in board.pieces:
+                if piece >= 17:
+                    gote_points += piece_points[piece]
+                else:
+                    sente_points += piece_points[piece]
+            sente_hand = board.pieces_in_hand[0]
+            gote_hand = board.pieces_in_hand[1]
+            sente_points += sente_hand[0] + sente_hand[1] + sente_hand[2] + sente_hand[3] + sente_hand[4]
+            sente_points += (sente_hand[5] + sente_hand[6]) * 5
+            gote_points += gote_hand[0] + gote_hand[1] + gote_hand[2] + gote_hand[3] + gote_hand[4]
+            gote_points += (gote_hand[5] + gote_hand[6]) * 5
+            global pvs
+            pvs = ["", "", "", "", ""]
+            global current_board_turn
+            current_board_turn = get_turn(board.turn)
+            bestpc3["fg"] = fgcolor
+            bestpc2["fg"] = fgcolor
+            bestpc4["fg"] = fgcolor
+            bestpc5["fg"] = fgcolor
+            bestpc1["fg"] = fgcolor
+        usi(cmdline)
+
+
+# コマンド入力処理
+def usi(c):
+    # 終了処理
+    if c == "quit":
+        root.destroy()
+        sys.exit()
+    shogi.stdin.write(c + "\n")
+    shogi.stdin.flush()
+
+
+# コマンド出力処理
+def output():
+    while True:
+        # エンジンからの出力を受け取る
+        line = shogi.stdout.readline()
+        shogibar(line)
+        # 標準出力
+        sys.stdout.write(line)
+        sys.stdout.flush()
+
+
+# 評価値バー情報更新
+def shogibar(line):
+    global winrate, bestpercent2, bestpercent, winrate4, winrate5, winrate3, winrate2
+    if line[:10] == "info depth":
+        if king_check():
+            leftgraph["bg"] = bgcolor
+            rightgraph["bg"] = bgcolor
+            leftgraph["bd"] = 0
+            rightgraph["bd"] = 0
+        sfen = line.split()
+        # 左右反転チェックを受け取る
+        if bln.get():
+            reverse = -1
+        else:
+            reverse = 1
+        # データ処理
+        if reverse == 1:
+            rightgraph["bg"] = rightgraphbg
+            leftgraph["bg"] = leftgraphbg
+            lwinratelabel.place(x=25, y=40, anchor=tk.W)
+            rwinratelabel.place(x=1225, y=40, anchor=tk.E)
+            ltebanlabel.place(x=25, y=117, anchor=tk.W)
+            rtebanlabel.place(x=1225, y=117, anchor=tk.E)
+        else:
+            rightgraph["bg"] = leftgraphbg
+            leftgraph["bg"] = rightgraphbg
+            rwinratelabel.place(x=25, y=40, anchor=tk.W)
+            lwinratelabel.place(x=1225, y=40, anchor=tk.E)
+            rtebanlabel.place(x=25, y=117, anchor=tk.W)
+            ltebanlabel.place(x=1225, y=117, anchor=tk.E)
+        turn = -(board.turn * 2 - 1) * reverse
+        move_count = board.move_number
+        depth = int(sfen[sfen.index("depth") + 1])
+        nodes = int(sfen[sfen.index("nodes") + 1])
+        if nodes < 1000:
+            nodes = str(nodes)
+        elif nodes < 1000000:
+            nodes = str(int(nodes / 1000)) + "K"
+        elif nodes < 1000000000:
+            nodes = str(int(nodes / 1000000)) + "M"
+        else:
+            nodes = str(int(nodes / 10000000000)) + "B"
+        if king_check():
+            if reverse == 1:
+                lwinratelabel["text"] = str(sente_points) + "pt"
+                rwinratelabel["text"] = str(gote_points) + "pt"
+                rightgraph["bd"] = 0
+                leftgraph["bd"] = 0
+                rightgraph["bg"] = bgcolor
+                leftgraph["bg"] = bgcolor
+            else:
+                rwinratelabel["text"] = str(sente_points) + "pt"
+                lwinratelabel["text"] = str(gote_points) + "pt"
+                rightgraph["bd"] = 0
+                leftgraph["bd"] = 0
+                rightgraph["bg"] = bgcolor
+                leftgraph["bg"] = bgcolor
+        else:
+            lwinratelabel["text"] = str(round(evals[0])) + "%"
+            rwinratelabel["text"] = str(100 - round(evals[0])) + "%"
+        try:
+            j = [sfen[sfen.index("score") + 1], sfen[sfen.index("score") + 2], int(sfen[sfen.index("multipv") + 1]),
+                 sfen[sfen.index("pv") + 1:]]
+            pvs[int(sfen[sfen.index("multipv") + 1]) - 1] = sfen[sfen.index("pv") + 1]
+            evals[int(sfen[sfen.index("multipv") + 1]) - 1] = cook(j)
+        except Exception:
+            if "multipv" not in sfen:
+                j = [sfen[sfen.index("score") + 1], sfen[sfen.index("score") + 2], 1, sfen[sfen.index("pv") + 1:]]
+                pvs[0] = sfen[sfen.index("pv") + 1]
+                evals[0] = cook(j)
+        if pvs and pvs[0] != "":
+            best1["text"] = "1. " + move_to_ktkw(board.move_from_usi(pvs[0]), board)
+        if len(pvs) >= 2 and pvs[1] != "":
+            best2["text"] = "2. " + move_to_ktkw(board.move_from_usi(pvs[1]), board)
+        if len(pvs) >= 3 and pvs[2] != "":
+            best3["text"] = "3. " + move_to_ktkw(board.move_from_usi(pvs[2]), board)
+        if len(pvs) >= 4 and pvs[3] != "":
+            best4["text"] = "4. " + move_to_ktkw(board.move_from_usi(pvs[3]), board)
+        if len(pvs) >= 5 and pvs[4] != "":
+            best5["text"] = "5. " + move_to_ktkw(board.move_from_usi(pvs[4]), board)
+        if len(evals) >= 2 and evals[1] is not None and pvs[1]:
+            bestpc2["text"] = str((math.floor(evals[1]) - math.floor(evals[0])) * current_board_turn) + "%"
+            if (math.floor(evals[1]) <= 10 and current_board_turn == 1) or (
+                    math.floor(evals[1]) >= 90 and current_board_turn == -1):
+                bestpc2["fg"] = dangercolor
+            else:
+                bestpc2["fg"] = fgcolor
+        if len(evals) >= 3 and evals[2] is not None and pvs[2]:
+            bestpc3["text"] = str((math.floor(evals[2]) - math.floor(evals[0])) * current_board_turn) + "%"
+            if (math.floor(evals[2]) <= 10 and current_board_turn == 1) or (
+                    math.floor(evals[2]) >= 90 and current_board_turn == -1):
+                bestpc3["fg"] = dangercolor
+            else:
+                bestpc3["fg"] = fgcolor
+        if len(evals) >= 4 and evals[3] is not None and pvs[3]:
+            bestpc4["text"] = str((math.floor(evals[3]) - math.floor(evals[0])) * current_board_turn) + "%"
+            if (math.floor(evals[3]) <= 10 and current_board_turn == 1) or (
+                    math.floor(evals[3]) >= 90 and current_board_turn == -1):
+                bestpc4["fg"] = dangercolor
+            else:
+                bestpc4["fg"] = fgcolor
+        if len(evals) >= 5 and evals[4] is not None and pvs[4]:
+            bestpc5["text"] = str((math.floor(evals[4]) - math.floor(evals[0])) * current_board_turn) + "%"
+            if (math.floor(evals[4]) <= 10 and current_board_turn == 1) or (
+                    math.floor(evals[4]) >= 90 and current_board_turn == -1):
+                bestpc5["fg"] = dangercolor
+            else:
+                bestpc5["fg"] = fgcolor
+        if len(pvs) > 0 and move_count == 1 and pvs[0] != "":
+            saizen["text"] = "BEST MOVE: " + move_to_ktkw(board.move_from_usi(pvs[0]), board)
+        elif len(pvs) > 0 and pvs[0] != "":
+            saizen["text"] = "MOVE " + str(
+                move_count - 1) + ": " + strlastmove + " | BEST MOVE: " + move_to_ktkw(
+                board.move_from_usi(pvs[0]), board)
+        countlabel["text"] = str(move_count)
+        if evals and evals[0] is not None:
+            if reverse == -1:
+                leftgraph.place(x=25, y=82, width=1200 - round(evals[0]) * 12, height=20)
+            elif reverse == 1:
+                leftgraph.place(x=25, y=82, width=round(evals[0]) * 12, height=20)
+        try:
+            if int(sfen[sfen.index("multipv") + 1]) - 1 == 0:
+                tansaku["text"] = engine + " | DEPTH: " + str(depth) + " MOVES | CALCULATING " + nodes + " NODES"
+        except ValueError:
+            tansaku["text"] = engine + " | DEPTH: " + str(depth) + " MOVES | CALCULATING " + nodes + " NODES"
+        if turn * reverse == 1:
+            ltebanlabel["text"] = "TURN"
+            ltebanlabel["bg"] = "#C1272D"
+            rtebanlabel["text"] = ""
+            rtebanlabel["bg"] = bgcolor
+        else:
+            rtebanlabel["text"] = "TURN"
+            rtebanlabel["bg"] = "#C1272D"
+            ltebanlabel["text"] = ""
+            ltebanlabel["bg"] = bgcolor
+        if king_check():
+            leftgraph["bg"] = "#FFFFFF"
+            rightgraph["bg"] = "#FFFFFF"
+            leftgraph["bd"] = 0
+            rightgraph["bd"] = 0
+
+
+def setfont(font1, font2):
+    global barfont
+    barfont = font1
+    global percentfont
+    percentfont = font2
+    suggestionlabel.config(font=(barfont, 20))
+    lwinratelabel.config(font=(percentfont, 55))
+    rwinratelabel.config(font=(percentfont, 55))
+    ltebanlabel.config(font=(barfont, 14))
+    rtebanlabel.config(font=(barfont, 14))
+    tansaku.config(font=(barfont, 12))
+    saizen.config(font=(barfont, 20))
+    best1.config(font=(barfont, 20))
+    best2.config(font=(barfont, 20))
+    best3.config(font=(barfont, 20))
+    best4.config(font=(barfont, 20))
+    best5.config(font=(barfont, 20))
+    bestpc1.config(font=(barfont, 20))
+    bestpc2.config(font=(barfont, 20))
+    bestpc3.config(font=(barfont, 20))
+    bestpc4.config(font=(barfont, 20))
+    bestpc5.config(font=(barfont, 20))
+    countlabel.config(font=(percentfont, 40))
+
+
+# コマンド受付と出力は並列処理(Tkinterとは別に動かす必要があるため)
+t = threading.Thread(target=output, daemon=True)
+t.start()
+
+# 初期設定(isreadyまで)
+while True:
+    cmdline = input()
+    if cmdline[:7] == "isready":
+        usi(cmdline)
+        
+        break
+    elif cmdline[:4] == "quit":
+        sys.exit()
+    usi(cmdline)
+
+# isready後は並列処理
+t2 = threading.Thread(target=command, daemon=True)
+t2.start()
+
+# Tkinter表示
+
+root = tk.Tk()
+root.configure(bg=bgcolor)
+
+bar = tk.Toplevel(root)
+# bar.wm_attributes("-topmost", 1)
+bar.geometry("1250x137")
+bar.minsize(width=1250, height=137)
+bar.configure(bg=bgcolor)
+bar.title("Bar")
+
+suggestionwindow = tk.Toplevel(root)
+# suggestionwindow.wm_attributes("-topmost", 1)
+suggestionwindow.configure(bg=bgcolor)
+suggestionwindow.geometry("1400x106")
+suggestionwindow.title("Best line")
+suggestionlabel = tk.Label(suggestionwindow, text="", font=(barfont, 20), bg=bgcolor, fg=fgcolor)
+suggestionlabel.place(x=25, y=25)
+# 勝率ラベル
+lwinratelabel = tk.Label(bar, text="50%", font=(percentfont, 55), bg=bgcolor, fg=fgcolor)
+lwinratelabel.place(x=25, y=40, anchor=tk.W)
+rwinratelabel = tk.Label(bar, text="50%", font=(percentfont, 55), bg=bgcolor, fg=fgcolor)
+rwinratelabel.place(x=1225, y=40, anchor=tk.E)
+
+# 手番ラベル
+ltebanlabel = tk.Label(bar, text="", font=(barfont, 14), bg="#ffffff", fg="#ffffff")
+ltebanlabel.place(x=25, y=117, anchor=tk.W)
+rtebanlabel = tk.Label(bar, text="", font=(barfont, 14), bg="#ffffff", fg="#ffffff")
+rtebanlabel.place(x=1225, y=117, anchor=tk.E)
+
+# 最善手ラベル
+saizen = tk.Label(bar, text="NƯỚC THỨ 0 | NƯỚC ĐI TỐI ƯU: ", font=(barfont, 20), bg=bgcolor, fg=fgcolor)
+saizen.place(x=600, y=35, anchor=tk.CENTER)
+# 探索ラベル
+tansaku = tk.Label(bar, text="SUISHO 5 | ĐỘ SÂU: 0 NƯỚC | ĐANG TÍNH TOÁN 0 THẾ CỜ", font=(barfont, 12), bg=bgcolor, fg=fgcolor)
+tansaku.place(x=600, y=117, anchor=tk.CENTER)
+
+# 評価値バー描画
+rightgraph = tk.Label(bar, text="", bg=rightgraphbg, highlightthickness=3, highlightbackground=fgcolor)
+rightgraph.place(x=25, y=82, width=1200, height=20)
+leftgraph = tk.Label(bar, text="", bg=leftgraphbg, highlightthickness=3, highlightbackground=fgcolor)
+leftgraph.place(x=25, y=82, width=600, height=20)
+bln = tk.BooleanVar()
+bln.set(False)
+check = tk.Checkbutton(bar, variable=bln, text="Reverse", font=(barfont, 15), bg=bgcolor, fg=fgcolor,
+                       activeforeground=fgcolor)
+check.place(x=50, y=150)
+# 左右反転チェック
+
+fontwindow = tk.Toplevel(root)
+fontwindow.title("Set font")
+label1 = tk.Label(fontwindow, text="Bar font")
+label1.grid(row=0, column=0)
+label2 = tk.Label(fontwindow, text="Percent font")
+label2.grid(row=1, column=0)
+barfontbox = tk.Entry(fontwindow)
+barfontbox.grid(row=0, column=1)
+percentfontbox = tk.Entry(fontwindow)
+percentfontbox.grid(row=1, column=1)
+updatebtn = tk.Button(fontwindow, command=lambda: setfont(barfontbox.get(), percentfontbox.get()), text="Set font")
+updatebtn.grid(row=2)
+# fontwindow.wm_attributes("-topmost", 1)
+
+root.geometry("395x264")
+# root.wm_attributes("-topmost", 1)
+root.minsize(width=380, height=264)
+root.configure(bg=bgcolor)
+root.title("Other moves")
+# title = tk.Label(root, text="候補手", font=(barfont, 20), bg=bgcolor, fg="#000000")
+best1 = tk.Label(root, text="1.", font=(barfont, 20), bg=bgcolor, fg=fgcolor)
+best2 = tk.Label(root, text="2.", font=(barfont, 20), bg=bgcolor, fg=fgcolor)
+best3 = tk.Label(root, text="3.", font=(barfont, 20), bg=bgcolor, fg=fgcolor)
+best4 = tk.Label(root, text="4.", font=(barfont, 20), bg=bgcolor, fg=fgcolor)
+best5 = tk.Label(root, text="5.", font=(barfont, 20), bg=bgcolor, fg=fgcolor)
+bestpc1 = tk.Label(root, text="-", font=(barfont, 20), bg=bgcolor, fg=fgcolor)
+bestpc2 = tk.Label(root, text="0%", font=(barfont, 20), bg=bgcolor, fg=fgcolor)
+bestpc3 = tk.Label(root, text="0%", font=(barfont, 20), bg=bgcolor, fg=fgcolor)
+bestpc4 = tk.Label(root, text="0%", font=(barfont, 20), bg=bgcolor, fg=fgcolor)
+bestpc5 = tk.Label(root, text="0%", font=(barfont, 20), bg=bgcolor, fg=fgcolor)
+best1.place(x=30, y=67, anchor=tk.W)
+best2.place(x=30, y=107, anchor=tk.W)
+best3.place(x=30, y=147, anchor=tk.W)
+best4.place(x=30, y=187, anchor=tk.W)
+best5.place(x=30, y=227, anchor=tk.W)
+# title.place(x=197, y=20, anchor=tk.CENTER)
+bestpc1.place(x=370, y=67, anchor=tk.E)
+bestpc2.place(x=370, y=107, anchor=tk.E)
+bestpc3.place(x=370, y=147, anchor=tk.E)
+bestpc4.place(x=370, y=187, anchor=tk.E)
+bestpc5.place(x=370, y=227, anchor=tk.E)
+movecount = tk.Toplevel(root)
+movecount.geometry("200x100")
+# movecount.wm_attributes("-topmost", 1)
+movecount.title("Move count")
+countlabel = tk.Label(movecount, text="0", font=(percentfont, 40), bg=bgcolor, fg=fgcolor)
+countlabel.place(x=20, y=20)
+movecount.configure(bg=bgcolor)
+
+root.mainloop()
